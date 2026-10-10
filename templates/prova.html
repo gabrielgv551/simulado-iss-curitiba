@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Prova — questão {{ indice + 1 }}{% endblock %}
+{% block conteudo %}
+<p>
+  Questão <strong>{{ indice + 1 }}</strong> de {{ total }}
+  <span class="cronometro" id="cron" style="float:right;">00:00</span>
+</p>
+<div class="progresso"><div style="width:{{ (100 * (indice + 1) / total)|round(1) }}%;"></div></div>
+<p>Respondidas: {{ respondidas }} de {{ total }}</p>
+
+<div class="card">
+  <p style="color:#667;"><strong>{{ q.tema or 'Sem tema' }}</strong></p>
+  <div class="enunciado">{{ q.enunciado }}</div>
+  <form method="post" id="form">
+    <input type="hidden" name="questao_id" value="{{ q.id }}">
+    {% for letra, texto in alts %}
+    <label class="alt">
+      <input type="radio" name="marcada" value="{{ letra }}"
+             {% if marcada == letra %}checked{% endif %}>
+      <strong>{{ letra }})</strong> {{ texto }}
+    </label>
+    {% endfor %}
+    <div class="nav">
+      <button type="submit" name="acao" value="anterior" class="btn-sec"
+              {% if indice == 0 %}disabled{% endif %}>&larr; Anterior</button>
+      <button type="submit" name="acao" value="proxima" class="btn-sec"
+              {% if indice >= total - 1 %}disabled{% endif %}>Próxima &rarr;</button>
+    </div>
+    <div class="nav">
+      <span></span>
+      <button type="submit" name="acao" value="submeter" class="btn-perigo"
+              onclick="return confirm('Submeter o simulado?');">
+        Submeter simulado
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+let s = 0;
+setInterval(() => {
+  s++;
+  document.getElementById('cron').textContent =
+    String(Math.floor(s / 60)).padStart(2, '0') + ':' +
+    String(s % 60).padStart(2, '0');
+}, 1000);
+</script>
+{% endblock %}

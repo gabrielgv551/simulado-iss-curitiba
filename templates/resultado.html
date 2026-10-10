@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titulo %}Resultado — Simulado ISS Curitiba{% endblock %}
+{% block conteudo %}
+<div class="card" style="text-align:center;">
+  <h2>Resultado</h2>
+  <div class="nota-grande">{{ nota }}%</div>
+  <p><strong>{{ acertos }}</strong> acertos de <strong>{{ total }}</strong></p>
+  <a class="btn" href="{{ url_for('inicio') }}">Novo simulado</a>
+</div>
+
+<div class="card">
+  <h2>Acertos por tema</h2>
+  {% for tema, d in por_tema.items() %}
+  <div class="barra-tema">
+    <div>{{ tema }} — {{ d.acertos }}/{{ d.total }}</div>
+    <div class="progresso">
+      <div class="preench"
+           style="width:{{ (100 * d.acertos / d.total)|round(1) }}%;"></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <h2>Revisão</h2>
+  {% for q in questoes %}
+  <div class="revisao">
+    {% if q.correta %}<span class="certa">✔ Acertou</span>
+    {% else %}<span class="errada">✘ Errou</span>{% endif %}
+    (gabarito <strong>{{ q.gabarito }}</strong>,
+     marcou {{ q.resposta_marcada or '—' }})
+    <details>
+      <summary>{{ q.enunciado[:180] }}…</summary>
+      <div class="enunciado" style="margin-top:8px;">{{ q.enunciado }}</div>
+      {% if q.justificativa %}
+      <p><strong>Comentário:</strong> {{ q.justificativa }}</p>
+      {% endif %}
+    </details>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

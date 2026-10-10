@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}Simulado ISS Curitiba{% endblock %}</title>
+<style>
+  :root { --azul: #1a3a6b; --azul2: #2d5aa0; --cinza: #f4f6f9; --ok: #1e8e3e;
+          --erro: #d93025; --borda: #dde3ec; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, Arial, sans-serif;
+         background: var(--cinza); color: #222; }
+  header { background: var(--azul); color: #fff; padding: 14px 18px; }
+  header h1 { margin: 0; font-size: 1.1rem; }
+  header small { opacity: .75; }
+  main { max-width: 820px; margin: 0 auto; padding: 18px 14px 60px; }
+  .card { background: #fff; border: 1px solid var(--borda);
+          border-radius: 10px; padding: 20px; margin-top: 16px; }
+  h2 { color: var(--azul); margin-top: 0; }
+  label { display: block; margin: 12px 0 4px; font-weight: 600; }
+  input[type=number], input[type=password] {
+    width: 100%; padding: 10px; border: 1px solid var(--borda);
+    border-radius: 8px; font-size: 1rem; }
+  button, .btn { background: var(--azul2); color: #fff; border: 0;
+    padding: 11px 22px; border-radius: 8px; font-size: 1rem;
+    cursor: pointer; text-decoration: none; display: inline-block; }
+  button:hover, .btn:hover { background: var(--azul); }
+  .btn-sec { background: #e8edf5; color: var(--azul); }
+  .btn-sec:hover { background: #d7e0ee; }
+  .btn-perigo { background: var(--ok); }
+  .erro { color: var(--erro); font-weight: 600; }
+  .enunciado { white-space: pre-wrap; line-height: 1.55; font-size: 1.02rem; }
+  .alt { display: block; padding: 11px 12px; border: 1px solid var(--borda);
+         border-radius: 8px; margin: 8px 0; cursor: pointer; }
+  .alt:hover { border-color: var(--azul2); }
+  .alt input { margin-right: 8px; }
+  .progresso { height: 10px; background: #e3e8f0; border-radius: 5px;
+               overflow: hidden; margin: 12px 0; }
+  .progresso > div { height: 100%; background: var(--azul2); }
+  .barra-tema { margin: 6px 0; }
+  .barra-tema .preench { height: 14px; background: var(--azul2);
+    border-radius: 4px; }
+  .certa { color: var(--ok); font-weight: 700; }
+  .errada { color: var(--erro); font-weight: 700; }
+  .revisao { border-top: 1px solid var(--borda); padding: 12px 0; }
+  .nav { display: flex; justify-content: space-between; gap: 10px;
+         margin-top: 18px; flex-wrap: wrap; }
+  .cronometro { font-variant-numeric: tabular-nums; font-weight: 700;
+                color: var(--azul); }
+  .nota-grande { font-size: 3rem; font-weight: 800; color: var(--azul);
+                 margin: 8px 0; }
+  details { margin-top: 6px; }
+  summary { cursor: pointer; color: var(--azul2); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Simulado ISS Curitiba <small>Auditor Fiscal — banca FAFIPA</small></h1>
+</header>
+<main>
+{% block conteudo %}{% endblock %}
+</main>
+</body>
+</html>

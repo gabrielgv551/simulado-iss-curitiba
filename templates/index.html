@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Novo simulado — ISS Curitiba{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>Montar simulado</h2>
+  <p>Banco com <strong>{{ n_questoes }}</strong> questões reais da banca FAFIPA.</p>
+  <form method="post" action="{{ url_for('iniciar') }}">
+    <label for="n_questoes">Número de questões</label>
+    <input type="number" id="n_questoes" name="n_questoes" min="5" max="120"
+           value="40">
+    <label for="pct_basico">% Conhecimentos Básicos (Português e Informática)</label>
+    <input type="number" id="pct_basico" name="pct_basico" min="0" max="100"
+           value="20">
+    <div style="margin-top:16px;">
+      <button type="submit">Iniciar simulado</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
