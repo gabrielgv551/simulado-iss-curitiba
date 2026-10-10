@@ -7,13 +7,26 @@
      Você já respondeu <strong>{{ n_respondidas }}</strong> e fez
      <strong>{{ n_simulados }}</strong> simulado(s).
      <a href="{{ url_for('historico') }}">Ver histórico</a></p>
+
+  <p><strong>Estrutura da prova</strong> (idem edital):</p>
+  <table style="border-collapse:collapse;margin-bottom:8px;">
+    <tr style="border-bottom:2px solid var(--borda);text-align:left;">
+      <th style="padding:6px 24px 6px 0;">Matéria</th>
+      <th style="padding:6px 12px 6px 0;">Questões</th>
+      <th style="padding:6px 0;">Peso</th>
+    </tr>
+    <tr><td style="padding:6px 24px 6px 0;">Língua Portuguesa</td>
+        <td id="q-port">5</td><td>12,5%</td></tr>
+    <tr><td style="padding:6px 24px 6px 0;">Noções de Informática</td>
+        <td id="q-info">5</td><td>12,5%</td></tr>
+    <tr><td style="padding:6px 24px 6px 0;">Conhecimentos Específicos</td>
+        <td id="q-esp">30</td><td>75%</td></tr>
+  </table>
+
   <form method="post" action="{{ url_for('iniciar') }}">
     <label for="n_questoes">Número de questões</label>
-    <input type="number" id="n_questoes" name="n_questoes" min="5" max="120"
-           value="40">
-    <label for="pct_basico">% Conhecimentos Básicos (Português e Informática)</label>
-    <input type="number" id="pct_basico" name="pct_basico" min="0" max="100"
-           value="20">
+    <input type="number" id="n_questoes" name="n_questoes" min="8" max="120"
+           value="40" oninput="atualizar()">
     <label style="font-weight:400;display:flex;align-items:center;gap:8px;">
       <input type="checkbox" name="excluir_feitas" checked>
       Não repetir questões que já respondi
@@ -23,4 +36,15 @@
     </div>
   </form>
 </div>
+
+<script>
+function atualizar() {
+  const n = Math.max(8, parseInt(document.getElementById('n_questoes').value) || 40);
+  const pi = Math.round(n * 0.125);
+  document.getElementById('q-port').textContent = pi;
+  document.getElementById('q-info').textContent = pi;
+  document.getElementById('q-esp').textContent = n - 2 * pi;
+}
+atualizar();
+</script>
 {% endblock %}

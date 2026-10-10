@@ -158,20 +158,25 @@ def _sortear_por_grupo(cur, temas, n, ja_usados):
     return ids
 
 
-def montar_simulado(cur, n_questoes, pct_basico, excluir_feitas=False):
+def montar_simulado(cur, n_questoes, excluir_feitas=False):
+    """Estrutura da prova real (edital): 12,5% Português, 12,5% Informática,
+    75% Específicos (ex.: 40 questões = 5 + 5 + 30)."""
     cur.execute("SELECT codigo, descricao FROM temas ORDER BY codigo")
     temas = cur.fetchall()
-    basicos = [t for t in temas if t["codigo"].count(".") == 1
-               and t["codigo"].startswith("1.")]
+    portugues = [t for t in temas if t["codigo"] == "1.1"]
+    informatica = [t for t in temas if t["codigo"] == "1.2"]
     especificos = [t for t in temas if t["codigo"].count(".") == 1
                    and t["codigo"].startswith("2.")]
-    n_bas = round(n_questoes * pct_basico / 100)
+    n_port = round(n_questoes * 0.125)
+    n_info = round(n_questoes * 0.125)
+    n_esp = n_questoes - n_port - n_info
     usados = set()
     if excluir_feitas:
         cur.execute("SELECT DISTINCT questao_id FROM respostas")
         usados.update(r["questao_id"] for r in cur.fetchall())
-    ids = _sortear_por_grupo(cur, especificos, n_questoes - n_bas, usados)
-    ids += _sortear_por_grupo(cur, basicos, n_bas, usados)
+    ids = _sortear_por_grupo(cur, especificos, n_esp, usados)
+    ids += _sortear_por_grupo(cur, portugues, n_port, usados)
+    ids += _sortear_por_grupo(cur, informatica, n_info, usados)
     if not ids:
         raise RuntimeError(
             "Sem questões disponíveis no banco."
@@ -181,7 +186,8 @@ def montar_simulado(cur, n_questoes, pct_basico, excluir_feitas=False):
     cur.execute(
         "INSERT INTO simulados (data, n_questoes, config_json) "
         "VALUES (NOW(), %s, %s) RETURNING id", (len(ids), json.dumps(
-            {"n_questoes": n_questoes, "pct_basico": pct_basico})))
+            {"n_questoes": n_questoes,
+             "estrutura": "12.5% português + 12.5% informática + 75% específicos"})))
     sid = cur.fetchone()["id"]
     cur.executemany(
         "INSERT INTO respostas (simulado_id, questao_id) VALUES (%s, %s)",
@@ -214,12 +220,11 @@ def inicio():
 @exige_login
 def iniciar():
     n = max(5, min(120, int(request.form.get("n_questoes", 40))))
-    pct = max(0, min(100, int(request.form.get("pct_basico", 20))))
     excluir = bool(request.form.get("excluir_feitas"))
     try:
         with pg() as conn:
             cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            sid = montar_simulado(cur, n, pct, excluir_feitas=excluir)
+            sid = montar_simulado(cur, n, excluir_feitas=excluir)
             conn.commit()
     except RuntimeError as e:
         return render_template("erro.html", mensagem=str(e)), 400
