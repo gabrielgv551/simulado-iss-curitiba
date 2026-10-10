@@ -42,13 +42,11 @@ def pg():
 
 
 # ---------------------------------------------------------------------------
-# Login simples
+# Acesso livre (senha removida a pedido do usuário — uso pessoal)
 # ---------------------------------------------------------------------------
 def exige_login(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not session.get("autorizado"):
-            return redirect(url_for("login", proximo=request.path))
         return f(*args, **kwargs)
     return wrapper
 
