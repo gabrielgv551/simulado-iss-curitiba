@@ -56,6 +56,10 @@
 <body>
 <header>
   <h1>Simulado ISS Curitiba <small>Auditor Fiscal — banca FAFIPA</small></h1>
+  <nav style="margin-top:6px;">
+    <a href="{{ url_for('inicio') }}" style="color:#fff;margin-right:14px;">Novo simulado</a>
+    <a href="{{ url_for('historico') }}" style="color:#fff;">Histórico</a>
+  </nav>
 </header>
 <main>
 {% block conteudo %}{% endblock %}

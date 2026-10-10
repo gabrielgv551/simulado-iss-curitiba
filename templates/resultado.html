@@ -6,6 +6,7 @@
   <div class="nota-grande">{{ nota }}%</div>
   <p><strong>{{ acertos }}</strong> acertos de <strong>{{ total }}</strong></p>
   <a class="btn" href="{{ url_for('inicio') }}">Novo simulado</a>
+  {% if historico %}<a class="btn btn-sec" href="{{ url_for('historico') }}">Voltar ao histórico</a>{% endif %}
 </div>
 
 <div class="card">

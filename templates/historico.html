@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}Histórico — Simulado ISS Curitiba{% endblock %}
+{% block conteudo %}
+<div class="card">
+  <h2>Histórico de simulados</h2>
+  <p>Você já respondeu <strong>{{ respondidas }}</strong> questões distintas.</p>
+  {% if simulados %}
+  <table style="width:100%;border-collapse:collapse;">
+    <tr style="text-align:left;border-bottom:2px solid var(--borda);">
+      <th style="padding:8px 4px;">Data</th>
+      <th>Questões</th>
+      <th>Respondidas</th>
+      <th>Acertos</th>
+      <th>Nota</th>
+      <th></th>
+    </tr>
+    {% for s in simulados %}
+    <tr style="border-bottom:1px solid var(--borda);">
+      <td style="padding:8px 4px;">{{ s.data }}</td>
+      <td>{{ s.n_questoes }}</td>
+      <td>{{ s.respondidas }}</td>
+      <td>{{ s.acertos }}</td>
+      <td><strong>{{ s.nota }}%</strong></td>
+      <td><a href="{{ url_for('historico_simulado', sid=s.id) }}">Rever</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p>Nenhum simulado feito ainda.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Desempenho acumulado por tema</h2>
+  {% for t in por_tema %}
+  <div class="barra-tema">
+    <div>{{ t.tema or '(sem tema)' }} —
+      {{ t.acertos }}/{{ t.total }}
+      ({{ (100 * t.acertos / t.total)|round(0) }}%)</div>
+    <div class="progresso">
+      <div class="preench"
+           style="width:{{ (100 * t.acertos / t.total)|round(1) }}%;"></div>
+    </div>
+  </div>
+  {% else %}
+  <p>Sem respostas registradas ainda.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,9 +1,12 @@
 {% extends "base.html" %}
-{% block titulo %}Novo simulado — ISS Curitiba{% endblock %}
+{% block titulo %}Montar simulado — ISS Curitiba{% endblock %}
 {% block conteudo %}
 <div class="card">
   <h2>Montar simulado</h2>
-  <p>Banco com <strong>{{ n_questoes }}</strong> questões reais da banca FAFIPA.</p>
+  <p>Banco com <strong>{{ n_questoes }}</strong> questões reais da banca FAFIPA.
+     Você já respondeu <strong>{{ n_respondidas }}</strong> e fez
+     <strong>{{ n_simulados }}</strong> simulado(s).
+     <a href="{{ url_for('historico') }}">Ver histórico</a></p>
   <form method="post" action="{{ url_for('iniciar') }}">
     <label for="n_questoes">Número de questões</label>
     <input type="number" id="n_questoes" name="n_questoes" min="5" max="120"
@@ -11,6 +14,10 @@
     <label for="pct_basico">% Conhecimentos Básicos (Português e Informática)</label>
     <input type="number" id="pct_basico" name="pct_basico" min="0" max="100"
            value="20">
+    <label style="font-weight:400;display:flex;align-items:center;gap:8px;">
+      <input type="checkbox" name="excluir_feitas" checked>
+      Não repetir questões que já respondi
+    </label>
     <div style="margin-top:16px;">
       <button type="submit">Iniciar simulado</button>
     </div>

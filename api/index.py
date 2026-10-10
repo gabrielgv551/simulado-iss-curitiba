@@ -158,7 +158,7 @@ def _sortear_por_grupo(cur, temas, n, ja_usados):
     return ids
 
 
-def montar_simulado(cur, n_questoes, pct_basico):
+def montar_simulado(cur, n_questoes, pct_basico, excluir_feitas=False):
     cur.execute("SELECT codigo, descricao FROM temas ORDER BY codigo")
     temas = cur.fetchall()
     basicos = [t for t in temas if t["codigo"].count(".") == 1
@@ -167,10 +167,17 @@ def montar_simulado(cur, n_questoes, pct_basico):
                    and t["codigo"].startswith("2.")]
     n_bas = round(n_questoes * pct_basico / 100)
     usados = set()
+    if excluir_feitas:
+        cur.execute("SELECT DISTINCT questao_id FROM respostas")
+        usados.update(r["questao_id"] for r in cur.fetchall())
     ids = _sortear_por_grupo(cur, especificos, n_questoes - n_bas, usados)
     ids += _sortear_por_grupo(cur, basicos, n_bas, usados)
     if not ids:
-        raise RuntimeError("Sem questões disponíveis no banco.")
+        raise RuntimeError(
+            "Sem questões disponíveis no banco."
+            if not excluir_feitas else
+            "Você já respondeu todas as questões do banco com esses filtros. "
+            "Desmarque 'não repetir' ou reduza o número de questões.")
     cur.execute(
         "INSERT INTO simulados (data, n_questoes, config_json) "
         "VALUES (NOW(), %s, %s) RETURNING id", (len(ids), json.dumps(
@@ -192,7 +199,15 @@ def inicio():
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("SELECT COUNT(*) c FROM questoes WHERE gabarito != ''")
         n_questoes = cur.fetchone()["c"]
-    return render_template("index.html", n_questoes=n_questoes)
+        cur.execute("SELECT COUNT(*) c FROM simulados")
+        n_simulados = cur.fetchone()["c"]
+        cur.execute(
+            "SELECT COUNT(DISTINCT questao_id) c FROM respostas "
+            "WHERE resposta_marcada IS NOT NULL")
+        n_respondidas = cur.fetchone()["c"]
+    return render_template("index.html", n_questoes=n_questoes,
+                           n_simulados=n_simulados,
+                           n_respondidas=n_respondidas)
 
 
 @app.route("/iniciar", methods=["POST"])
@@ -200,10 +215,14 @@ def inicio():
 def iniciar():
     n = max(5, min(120, int(request.form.get("n_questoes", 40))))
     pct = max(0, min(100, int(request.form.get("pct_basico", 20))))
-    with pg() as conn:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        sid = montar_simulado(cur, n, pct)
-        conn.commit()
+    excluir = bool(request.form.get("excluir_feitas"))
+    try:
+        with pg() as conn:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            sid = montar_simulado(cur, n, pct, excluir_feitas=excluir)
+            conn.commit()
+    except RuntimeError as e:
+        return render_template("erro.html", mensagem=str(e)), 400
     session["simulado_id"] = sid
     session["indice"] = 0
     return redirect(url_for("prova"))
@@ -290,6 +309,83 @@ def resultado():
                                                         1) if total else 0,
                            acertos=acertos, total=total,
                            por_tema=por_tema, questoes=questoes)
+
+
+def _corrigir(cur, sid):
+    cur.execute(
+        "UPDATE respostas SET correta = CASE WHEN resposta_marcada = "
+        "(SELECT gabarito FROM questoes WHERE id = questao_id) THEN 1 "
+        "ELSE 0 END WHERE simulado_id = %s AND resposta_marcada "
+        "IS NOT NULL", (sid,))
+
+
+@app.route("/historico")
+@exige_login
+def historico():
+    with pg() as conn:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("SELECT id FROM simulados ORDER BY id DESC")
+        sids = [r["id"] for r in cur.fetchall()]
+        simulados = []
+        for sid in sids:
+            _corrigir(cur, sid)
+            cur.execute(
+                "SELECT s.id, s.data, s.n_questoes, COUNT(r.id) respondidas, "
+                "SUM(CASE WHEN r.correta = 1 THEN 1 ELSE 0 END) acertos "
+                "FROM simulados s JOIN respostas r ON r.simulado_id = s.id "
+                "WHERE s.id = %s GROUP BY s.id", (sid,))
+            row = cur.fetchone()
+            if row:
+                row["nota"] = (round(100 * row["acertos"] / row["n_questoes"],
+                                     1) if row["n_questoes"] else 0)
+                data = str(row["data"])
+                row["data"] = (data[8:10] + "/" + data[5:7] + "/" + data[:4]
+                               + " " + data[11:16])
+                simulados.append(row)
+        conn.commit()
+        cur.execute(
+            "SELECT q.tema, COUNT(*) total, "
+            "SUM(CASE WHEN r.correta = 1 THEN 1 ELSE 0 END) acertos "
+            "FROM respostas r JOIN questoes q ON q.id = r.questao_id "
+            "WHERE r.resposta_marcada IS NOT NULL GROUP BY q.tema "
+            "ORDER BY total DESC")
+        por_tema = cur.fetchall()
+        cur.execute(
+            "SELECT COUNT(DISTINCT questao_id) c FROM respostas "
+            "WHERE resposta_marcada IS NOT NULL")
+        respondidas = cur.fetchone()["c"]
+    return render_template("historico.html", simulados=simulados,
+                           por_tema=por_tema, respondidas=respondidas)
+
+
+@app.route("/historico/<int:sid>")
+@exige_login
+def historico_simulado(sid):
+    with pg() as conn:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        _corrigir(cur, sid)
+        cur.execute(
+            "SELECT q.id, q.tema, q.enunciado, q.gabarito, q.justificativa, "
+            "r.resposta_marcada, r.correta FROM respostas r "
+            "JOIN questoes q ON q.id = r.questao_id "
+            "WHERE r.simulado_id = %s ORDER BY r.id", (sid,))
+        questoes = cur.fetchall()
+        conn.commit()
+    if not questoes:
+        abort(404)
+    acertos = sum(1 for q in questoes if q["correta"])
+    total = len(questoes)
+    por_tema = {}
+    for q in questoes:
+        d = por_tema.setdefault(q["tema"] or "(sem tema)",
+                                {"acertos": 0, "total": 0})
+        d["total"] += 1
+        d["acertos"] += 1 if q["correta"] else 0
+    return render_template("resultado.html", nota=round(100 * acertos / total,
+                                                        1) if total else 0,
+                           acertos=acertos, total=total,
+                           por_tema=por_tema, questoes=questoes,
+                           historico=True)
 
 
 if __name__ == "__main__":
